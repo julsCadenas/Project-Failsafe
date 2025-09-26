@@ -9,6 +9,7 @@ class Settings:
     HF_TOKEN: str = os.getenv("HF_TOKEN")
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY")
     GEMINI_MODEL: str = "gemini-2.5-flash"
+    MODEL_PROVIDER: str = "google_genai"
     EMBEDDING_MODEL: str = "sentence-transformers/all-mpnet-base-v2"
     COLLECTION_NAME: str = "superheroes"
 
