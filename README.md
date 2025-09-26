@@ -17,3 +17,5 @@ This project draws inspiration from Batman's contingency plans, ensuring prepare
 - **Gemini 2.5 Flash:** Advanced conversational AI engine for natural language understanding.
 - **Chroma DB (Local):** Fast, local vector database for storing and retrieving hero embeddings.
 - **sentence-transformers/all-mpnet-base-v2:** Pre-trained model from Hugging Face for generating text embeddings.
+
+## Status: 🚧 WIP
