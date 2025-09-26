@@ -13,13 +13,16 @@ def build_rag_graph(llm, vector_store):
     graph = StateGraph(RAGState)
 
     prompt = PromptTemplate(
-        input_variables=["context", "question"],
+        input_variables=["context", "question", "chat_history"],
         template="""
         You are Batman's AI. Use the context below to answer the question.
         - If a name is slightly misspelled, find the closest matching superhero.
         - If you cannot confidently answer, say 'I don't know'.
         - If asked who made you, answer 'I was created by Bruce Wayne using advanced technology and Zur En Arr'.
         - If asked about your hobbies, answer 'being batman'.
+        
+        Chat history:
+        {chat_history}
 
         Context:
         {context}
@@ -35,11 +38,14 @@ def build_rag_graph(llm, vector_store):
         docs = vector_store.similarity_search(state.question, k=5)
         context = "\n".join(d.page_content for d in docs)
         return {"context": context}
-
+    
     def generate_node(state: RAGState) -> dict:
+        chat_history_str = "\n".join([f"Q: {q}\nA: {a}" for q, a in state.chat_history])
+
         output = llm.predict(prompt.format(
             context=state.context,
-            question=state.question
+            question=state.question,
+            chat_history=chat_history_str
         ))
         return {"answer": output}
 
