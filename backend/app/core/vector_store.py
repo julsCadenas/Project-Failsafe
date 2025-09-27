@@ -14,3 +14,7 @@ def get_vector_store(embeddings):
         client=chromadb.HttpClient(host=CHROMA_HOST, port=int(CHROMA_PORT)),
         persist_directory=None,  # remote, so no local persistence
     )
+
+def get_collections():
+    client = chromadb.HttpClient(host=CHROMA_HOST, port=int(CHROMA_PORT))
+    return client.list_collections()

@@ -4,7 +4,7 @@ from typing import Optional
 import re
 
 from app.core.embeddings import hf_embeddings
-from app.core.vector_store import get_vector_store
+from app.core.vector_store import get_vector_store, get_collections
 from app.core.llm import get_llm
 from app.chains.rag_chain import build_rag_graph
 from app.services.chat_service import process_chat
@@ -30,3 +30,13 @@ def failsafe(payload: ChatRequest):
         "answer": answer,
         "history": history
     }
+
+@router.get("/health")
+def health_check():
+    try:
+        collections = get_collections()
+        if collections:
+            status = "ok"
+        return {"status": status}
+    except Exception as e:
+        return {"status": "error", "details": str(e)}
