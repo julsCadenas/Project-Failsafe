@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "./ui/button";
-import { Input } from "./ui/input";
 import { Card } from "./ui/card";
-// import { ScrollArea } from "./ui/scroll-area";
+import { Textarea } from "./ui/textarea";
 import { BatmanLogo } from "./batmanLogo";
 import { Send, User, Bot } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface Message {
   id: string;
@@ -26,7 +27,9 @@ export function ChatInterface() {
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [status, setStatus] = useState<"ONLINE" | "OFFLINE" | "CHECKING">("CHECKING");
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const scrollToBottom = () => {
     if (scrollAreaRef.current) {
@@ -39,6 +42,30 @@ export function ChatInterface() {
     scrollToBottom();
   }, [messages]);
 
+  useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        const res = await fetch("http://localhost:5555/api/health");
+        const data = await res.json();
+        setStatus(data.status?.toLowerCase() === "ok" ? "ONLINE" : "OFFLINE");
+      } catch (err) {
+        setStatus("OFFLINE");
+        console.error("Health check error:", err);
+      }
+    };
+
+    fetchStatus();
+    const interval = setInterval(fetchStatus, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Auto-expand textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "0px";
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + "px";
+    }
+  }, [input]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,16 +95,12 @@ export function ChatInterface() {
       if (!response.ok) throw new Error("Failed to get response");
       const data = await response.json();
 
-      // Save session_id returned by backend
       if (data.session_id) setSessionId(data.session_id);
 
-      // Safely extract answer as string
       let answerText = "";
       if (typeof data.answer === "string") {
         answerText = data.answer;
       } else if (data.answer && typeof data.answer === "object") {
-        // If data.answer is an object, try to extract the main content
-        // Adjust this depending on your backend's object structure
         answerText = data.answer.content || JSON.stringify(data.answer);
       } else {
         answerText = "I apologize, but I'm unable to process that request at the moment.";
@@ -109,7 +132,6 @@ export function ChatInterface() {
     }
   };
 
-
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
@@ -122,8 +144,19 @@ export function ChatInterface() {
               <p className="text-sm text-muted-foreground">Gotham Intelligence System</p>
             </div>
           </div>
-          <div className="flex flex-row gap-1 mt-2 sm:mt-0 text-xs text-green-400 font-semibold">
-            <p className="text-muted-foreground">Status:</p>ONLINE
+          <div className="flex flex-row gap-1 mt-2 sm:mt-0 text-xs font-semibold">
+            <p className="text-muted-foreground">Status:</p>
+            <p
+              className={
+                status === "ONLINE"
+                  ? "text-green-400"
+                  : status === "OFFLINE"
+                  ? "text-red-400"
+                  : "text-yellow-400"
+              }
+            >
+              {status}
+            </p>
           </div>
         </div>
       </div>
@@ -145,13 +178,18 @@ export function ChatInterface() {
               )}
 
           <Card
-            className={`min-w-[20%] max-w-[80%] p-3 ${
+            className={`p-3 ${
               msg.role === "user"
-                ? "bg-border text-foreground"
-                : "bg-card text-card-foreground"
+                ? "bg-border text-foreground max-w-[80%] break-words"
+                : "bg-card text-card-foreground max-w-[80%] break-words"
             }`}
           >
-            <p className="text-md leading-snug m-0 whitespace-pre-wrap">{msg.content}</p>
+            <div className="text-md leading-snug whitespace-pre-wrap break-words">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {msg.content}
+              </ReactMarkdown>
+            </div>
+
             <p
               className={`text-xs opacity-60 mt-0 m-0 ${
                 msg.role === "user" ? "text-foreground" : "text-muted-foreground"
@@ -160,7 +198,6 @@ export function ChatInterface() {
               {msg.timestamp.toLocaleTimeString()}
             </p>
           </Card>
-
 
               {msg.role === "user" && (
                 <div className="flex-shrink-0">
@@ -194,13 +231,20 @@ export function ChatInterface() {
       {/* Input */}
       <div className="border-t border-border bg-card flex-none p-4">
         <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
-          <div className="flex space-x-2">
-            <Input
+          <div className="flex space-x-2 items-center">
+            <Textarea
+              ref={textareaRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask about heroes, contingencies, or threat assessments..."
               disabled={isLoading}
-              className="flex-1 bg-input border-border text-foreground placeholder:text-muted-foreground"
+              className="flex-1 resize-none overflow-hidden bg-input border-border text-foreground placeholder:text-muted-foreground text-sm"
+              rows={1}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmit(e);
+              }}}
             />
             <Button
               type="submit"
