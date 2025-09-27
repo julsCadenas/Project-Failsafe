@@ -2,7 +2,6 @@ import uuid
 from typing import List, Tuple
 from app.chains.rag_chain import RAGState
 
-# chat history: {session_id: List[(q,a)]}
 chat_histories: dict[str, List[Tuple[str, str]]] = {}
 
 def process_chat(graph, question: str, session_id: str | None = None):
@@ -12,13 +11,11 @@ def process_chat(graph, question: str, session_id: str | None = None):
 
     initial_state = RAGState(
         question=question,
-        context="",
-        answer="",
         chat_history=history
     )
 
     final_state = graph.invoke(initial_state)
-    answer = final_state["answer"]
+    answer = final_state.get("answer", "")
 
     history.append((question, answer))
     chat_histories[session_id] = history
