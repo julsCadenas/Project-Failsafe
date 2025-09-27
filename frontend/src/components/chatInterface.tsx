@@ -38,28 +38,23 @@ export function ChatInterface() {
     }
   };
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+  useEffect(() => scrollToBottom(), [messages]);
+
+  const checkHealth = async () => {
+    try {
+      const res = await fetch("http://localhost:5555/api/health");
+      const data = await res.json();
+      setStatus(data.status?.toLowerCase() === "ok" ? "ONLINE" : "OFFLINE");
+    } catch (err) {
+      setStatus("OFFLINE");
+      console.error("Health check error:", err);
+    }
+  };
 
   useEffect(() => {
-    const fetchStatus = async () => {
-      try {
-        const res = await fetch("http://localhost:5555/api/health");
-        const data = await res.json();
-        setStatus(data.status?.toLowerCase() === "ok" ? "ONLINE" : "OFFLINE");
-      } catch (err) {
-        setStatus("OFFLINE");
-        console.error("Health check error:", err);
-      }
-    };
-
-    fetchStatus();
-    const interval = setInterval(fetchStatus, 10000);
-    return () => clearInterval(interval);
+    checkHealth();
   }, []);
 
-  // Auto-expand textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "0px";
@@ -70,6 +65,13 @@ export function ChatInterface() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
+
+    try {
+      checkHealth();
+    } catch (err) {
+      console.error("Health check failed:", err);
+      setStatus("OFFLINE");
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -177,27 +179,27 @@ export function ChatInterface() {
                 </div>
               )}
 
-          <Card
-            className={`p-3 ${
-              msg.role === "user"
-                ? "bg-border text-foreground max-w-[80%] break-words"
-                : "bg-card text-card-foreground max-w-[80%] break-words"
-            }`}
-          >
-            <div className="text-md leading-snug whitespace-pre-wrap break-words">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {msg.content}
-              </ReactMarkdown>
-            </div>
+              <Card
+                className={`p-3 ${
+                  msg.role === "user"
+                    ? "bg-border text-foreground max-w-[80%] break-words"
+                    : "bg-card text-card-foreground max-w-[80%] break-words"
+                }`}
+              >
+                <div className="text-md leading-snug whitespace-pre-wrap break-words">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {msg.content}
+                  </ReactMarkdown>
+                </div>
 
-            <p
-              className={`text-xs opacity-60 mt-0 m-0 ${
-                msg.role === "user" ? "text-foreground" : "text-muted-foreground"
-              }`}
-            >
-              {msg.timestamp.toLocaleTimeString()}
-            </p>
-          </Card>
+                <p
+                  className={`text-xs opacity-60 mt-0 m-0 ${
+                    msg.role === "user" ? "text-foreground" : "text-muted-foreground"
+                  }`}
+                >
+                  {msg.timestamp.toLocaleTimeString()}
+                </p>
+              </Card>
 
               {msg.role === "user" && (
                 <div className="flex-shrink-0">
