@@ -138,7 +138,7 @@ export function ChatInterface() {
       <div className="border-b border-border bg-card flex-none px-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4">
           <div className="flex items-center space-x-3">
-            <BatmanLogo size={32} />
+            <BatmanLogo size={48} />
             <div className="flex flex-col">
               <h1 className="text-xl font-bold text-foreground">BAT-COMPUTER</h1>
               <p className="text-sm text-muted-foreground">Gotham Intelligence System</p>
